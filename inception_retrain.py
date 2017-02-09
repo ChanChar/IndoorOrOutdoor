@@ -42,9 +42,9 @@ in.
 This produces a new model file that can be loaded and run by any TensorFlow
 program, for example the label_image sample code.
 To use with TensorBoard:
-By default, this script will log summaries to /tmp/retrain_logs directory
+By default, this script will log summaries to logs/retrain_logs directory
 Visualize the summaries with this command:
-tensorboard --logdir /tmp/retrain_logs
+tensorboard --logdir logs/retrain_logs
 """
 from __future__ import absolute_import
 from __future__ import division
@@ -86,6 +86,7 @@ MODEL_INPUT_DEPTH = 3
 JPEG_DATA_TENSOR_NAME = 'DecodeJpeg/contents:0'
 RESIZED_INPUT_TENSOR_NAME = 'ResizeBilinear:0'
 MAX_NUM_IMAGES_PER_CLASS = 2 ** 27 - 1  # ~134M
+VALID_IMAGE_EXTS = ['jpg', 'jpeg', 'JPG', 'JPEG']
 
 
 def create_image_lists(image_dir, testing_percentage, validation_percentage):
@@ -107,18 +108,13 @@ def create_image_lists(image_dir, testing_percentage, validation_percentage):
   result = {}
   sub_dirs = [x[0] for x in gfile.Walk(image_dir)]
   # The root directory comes first, so skip it.
-  is_root_dir = True
-  for sub_dir in sub_dirs:
-    if is_root_dir:
-      is_root_dir = False
-      continue
-    extensions = ['jpg', 'jpeg', 'JPG', 'JPEG']
+  for sub_dir in sub_dirs[1:]:
     file_list = []
     dir_name = os.path.basename(sub_dir)
     if dir_name == image_dir:
       continue
     print("Looking for images in '" + dir_name + "'")
-    for extension in extensions:
+    for extension in VALID_IMAGE_EXTS:
       file_glob = os.path.join(image_dir, dir_name, '*.' + extension)
       file_list.extend(gfile.Glob(file_glob))
     if not file_list:
@@ -390,8 +386,8 @@ def cache_bottlenecks(sess, image_lists, image_dir, bottleneck_dir,
       category_list = label_lists[category]
       for index, unused_base_name in enumerate(category_list):
         get_or_create_bottleneck(sess, image_lists, label_name, index,
-                                 image_dir, category, bottleneck_dir,
-                                 jpeg_data_tensor, bottleneck_tensor)
+                               image_dir, category, bottleneck_dir,
+                               jpeg_data_tensor, bottleneck_tensor)
         how_many_bottlenecks += 1
         if how_many_bottlenecks % 100 == 0:
           print(str(how_many_bottlenecks) + ' bottleneck files created.')
@@ -648,8 +644,7 @@ def add_final_training_ops(class_count, final_tensor_name, bottleneck_tensor):
 
   # Organizing the following ops as `final_training_ops` so they're easier
   # to see in TensorBoard
-  layer_name = 'final_training_ops'
-  with tf.name_scope(layer_name):
+  with tf.name_scope('final_training_ops'):
     with tf.name_scope('weights'):
       layer_weights = tf.Variable(tf.truncated_normal([BOTTLENECK_TENSOR_SIZE, class_count], stddev=0.001), name='final_weights')
       variable_summaries(layer_weights)
@@ -725,6 +720,7 @@ def main(_):
   do_distort_images = should_distort_images(
       FLAGS.flip_left_right, FLAGS.random_crop, FLAGS.random_scale,
       FLAGS.random_brightness)
+
   sess = tf.Session()
 
   if do_distort_images:
@@ -858,7 +854,7 @@ if __name__ == '__main__':
   parser.add_argument(
       '--summaries_dir',
       type=str,
-      default='tmp/retrain_logs',
+      default='logs/retrain_logs',
       help='Where to save summary logs for TensorBoard.'
   )
   parser.add_argument(
