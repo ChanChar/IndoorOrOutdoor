@@ -2,7 +2,6 @@
 *.ipynb_checkpoints
 *images/
 __pycache__/
-tmp/*
 tf_file/bottlenecks
 inception/*
 bottlenecks/*
