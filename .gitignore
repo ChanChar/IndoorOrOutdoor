@@ -1,8 +1,22 @@
 *.DS_Store
 *.ipynb_checkpoints
-*images/
 __pycache__/
-tf_file/bottlenecks
-inception/*
-bottlenecks/*
+
+# internal to training files
+# (inc. bottlenecks + original inception model + retrained graph & labels)
 tf_files/*
+tf_files_*/*
+inception/*
+
+# exclude any compressed data
+*.tar.gz
+*.zip
+
+# uncompressed data files
+*images/
+good_or_bad/
+
+# other
+*.tgz
+logs/*
+tmp/*
