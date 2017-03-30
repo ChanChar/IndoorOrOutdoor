@@ -6,6 +6,7 @@ import os
 import tensorflow as tf, sys
 import datetime
 import concurrent.futures
+import time
 
 class ImageLabeler:
     IMAGE_DIR = 'temp/images'
@@ -35,10 +36,10 @@ class ImageLabeler:
 
     def setup_graph(self):
         # Loads label file, strips off carriage return
-        self.label_lines = [line.rstrip() for line in tf.gfile.GFile("tf_files_1/retrained_labels.txt")]
+        self.label_lines = [line.rstrip() for line in tf.gfile.GFile("req_tf_files/retrained_labels.txt")]
 
         # Unpersists graph from file
-        with tf.gfile.FastGFile("tf_files_1/retrained_graph.pb", 'rb') as f:
+        with tf.gfile.FastGFile("req_tf_files/retrained_graph.pb", 'rb') as f:
             graph_def = tf.GraphDef()
             graph_def.ParseFromString(f.read())
             _ = tf.import_graph_def(graph_def, name='')
@@ -92,6 +93,7 @@ class ImageLabeler:
     def process_images(self, image_urls):
         # download each image given the image url concurrently using threads (try processes next time?).
         # We can use a with statement to ensure threads are cleaned up promptly
+        start_time = time.clock()
         with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
             paths = executor.map(self.download_image, image_urls)
 
@@ -99,7 +101,8 @@ class ImageLabeler:
         print("Processing {} images".format(len(self.image_paths)))
         # Read in the image_data
         self.image_data = [tf.gfile.FastGFile(image_path, 'rb').read() for image_path in self.image_paths]
-
+        end_time = time.clock()
+        print("Processing (download and parsing) took {}s.".format(end_time - start_time))
 
     # need to update shell if using something other than zsh.
     # uses imgcat to display the image inline with the terminal.
